@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IQID Lab Network Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f0f4f8;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8fafc;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+            --accent-blue: #3182ce;
+            --accent-green: #38a169;
+            --accent-orange: #dd6b20;
+            --accent-red: #e53e3e;
+            --accent-purple: #805ad5;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+            --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            --gradient-warning: linear-gradient(135deg, #dd6b20 0%, #c05621 100%);
+            --gradient-danger: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            --gradient-info: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a2332;
+            --bg-tertiary: #232f3e;
+            --text-primary: #f7fafc;
+            --text-secondary: #cbd5e0;
+            --text-muted: #a0aec0;
+            --border-color: #2d3748;
+            --glass-bg: rgba(26, 35, 50, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
+            --shadow-xl: 0 20px 60px rgba(0,0,0,0.6);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%);
+        }
+        
+        /* Top Navigation */
+        .top-nav {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 12px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .nav-center {
+            flex: 1;
+            max-width: 500px;
+        }
+        
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+        }
+        
+        .search-box input::placeholder { color: var(--text-muted); }
+        
+        .search-box .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        
+        .search-box .search-shortcut {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .nav-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+        
+        .nav-btn:hover {
+            background: var(--border-color);
+            transform: translateY(-1px);
+        }
+        
+        .nav-btn.primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+        
+        .nav-btn.success {
+            background: var(--gradient-success);
+            color: white;
+        }
+        
+        .theme-toggle {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        
+        .theme-toggle:hover {
+            border-color: var(--accent-blue);
+            transform: rotate(15deg);
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* KPI Dashboard */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .kpi-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 16px 16px 0 0;
+        }
+        
+        .kpi-card.blue::before { background: var(--gradient-info); }
+        .kpi-card.green::before { background: var(--gradient-success); }
+        .kpi-card.orange::before { background: var(--gradient-warning); }
+        .kpi-card.purple::before { background: var(--gradient-primary); }
+        .kpi-card.red::before { background: var(--gradient-danger); }
+        
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .kpi-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .kpi-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+        }
+        
+        .kpi-icon.blue { background: var(--gradient-info); }
+        .kpi-icon.green { background: var(--gradient-success); }
+        .kpi-icon.orange { background: var(--gradient-warning); }
+        .kpi-icon.purple { background: var(--gradient-primary); }
+        .kpi-icon.red { background: var(--gradient-danger); }
+        
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .kpi-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .kpi-change.up { color: var(--accent-green); }
+        .kpi-change.down { color: var(--accent-red); }
+        
+        .kpi-sparkline {
+            margin-top: 12px;
+            height: 40px;
+        }
+        
+        /* Filter Bar */
+        .filter-bar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filter-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        
+        .filter-chips {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-chip {
+            padding: 8px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+        
+        .filter-chip:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        
+        .filter-chip.active {
+            background: var(--gradient-primary);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .filter-chip.active-type {
+            background: var(--gradient-info);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .filter-chip.pipeline-type {
+            background: var(--gradient-warning);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .filter-select {
+            padding: 8px 32px 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23718096' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Map Card */
+        .map-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        
+        .map-overlay-controls {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .map-control-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.2s;
+        }
+        
+        .map-control-btn:hover {
+            transform: scale(1.1);
+            background: var(--accent-blue);
+            color: white;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card-title .icon {
+            font-size: 18px;
+        }
+        
+        .card-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .card-badge.blue { background: var(--gradient-info); }
+        .card-badge.orange { background: var(--gradient-warning); }
+        .card-badge.green { background: var(--gradient-success); }
+        
+        .card-body {
+            padding: 16px 20px;
+        }
+        
+        /* Pipeline List */
+        .pipeline-list {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        
+        .pipeline-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            background: var(--bg-tertiary);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .pipeline-item:hover {
+            background: var(--border-color);
+            transform: translateX(4px);
+        }
+        
+        .pipeline-rank {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--gradient-warning);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .pipeline-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .pipeline-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        
+        .pipeline-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .pipeline-progress-wrap {
+            width: 80px;
+            flex-shrink: 0;
+        }
+        
+        .pipeline-progress-bar {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        
+        .pipeline-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .pipeline-progress-fill.low { background: var(--gradient-danger); }
+        .pipeline-progress-fill.medium { background: var(--gradient-warning); }
+        .pipeline-progress-fill.high { background: var(--gradient-success); }
+        .pipeline-progress-fill.complete { background: var(--gradient-info); }
+        
+        .pipeline-progress-text {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+        
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+        
+        /* Revenue Cards */
+        .revenue-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .revenue-box {
+            padding: 16px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+        
+        .revenue-box.idr { background: var(--gradient-danger); }
+        .revenue-box.sgd { background: var(--gradient-info); }
+        .revenue-box.pip-idr { background: var(--gradient-warning); }
+        .revenue-box.pip-sgd { background: var(--gradient-primary); }
+        
+        .revenue-label {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        .revenue-value {
+            font-size: 20px;
+            font-weight: 800;
+        }
+        
+        /* Legend Section */
+        .legend-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .legend-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .legend-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            border-left: 4px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .legend-item:hover {
+            background: var(--border-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .legend-item.active-site { border-left-color: var(--accent-blue); }
+        .legend-item.pipeline-site { border-left-color: var(--accent-orange); }
+        
+        .legend-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .legend-marker {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .legend-marker.core { background: var(--gradient-danger); }
+        .legend-marker.hospital { background: var(--gradient-info); }
+        .legend-marker.clinic { background: var(--gradient-success); }
+        .legend-marker.pipeline { background: var(--gradient-warning); }
+        
+        .legend-text { flex: 1; min-width: 0; }
+        
+        .legend-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .legend-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .legend-revenue {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-green);
+            margin-top: 2px;
+        }
+        
+        .legend-progress {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .progress-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        
+        .progress-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .progress-bar-container {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-bar.low { background: var(--gradient-danger); }
+        .progress-bar.medium { background: var(--gradient-warning); }
+        .progress-bar.high { background: var(--gradient-success); }
+        .progress-bar.complete { background: var(--gradient-info); }
+        
+        .legend-note {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-top: 6px;
+        }
+        
+        .legend-edit {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--accent-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+        
+        .legend-item:hover .legend-edit { opacity: 1; }
+        
+        /* Sync Section */
+        .sync-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .sync-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .sync-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .sync-content {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .sync-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        .sync-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        
+        .sync-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .sync-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .sync-btn.test { background: var(--gradient-info); color: white; }
+        .sync-btn.push { background: var(--gradient-success); color: white; }
+        .sync-btn.pull { background: var(--gradient-warning); color: white; }
+        .sync-btn.guide { background: var(--gradient-primary); color: white; }
+        
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .sync-status.connected { background: rgba(56, 161, 105, 0.15); color: var(--accent-green); }
+        .sync-status.disconnected { background: rgba(229, 62, 62, 0.15); color: var(--accent-red); }
+        .sync-status.pending { background: rgba(221, 107, 32, 0.15); color: var(--accent-orange); }
+        
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            padding: 20px;
+        }
+        
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s;
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .modal-overlay.show .modal { transform: scale(1) translateY(0); }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--bg-secondary);
+            z-index: 1;
+        }
+        
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover { background: var(--border-color); }
+        
+        .modal-body { padding: 24px; }
+        
+        .form-group { margin-bottom: 16px; }
+        
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .status-toggle {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .status-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: var(--text-secondary);
+        }
+        
+        .status-btn.active {
+            background: var(--gradient-info);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .status-btn.pipeline-active {
+            background: var(--gradient-warning);
+            border-color: transparent;
+            color: white;
+        }
+        
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            position: sticky;
+            bottom: 0;
+            background: var(--bg-secondary);
+        }
+        
+        .modal-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .modal-btn:hover { transform: translateY(-2px); }
+        .modal-btn.primary { background: var(--gradient-info); color: white; }
+        .modal-btn.success { background: var(--gradient-success); color: white; }
+        .modal-btn.danger { background: var(--gradient-danger); color: white; }
+        .modal-btn.secondary { background: var(--bg-tertiary); color: var(--text-secondary); }
+        
+        /* Popup Styles */
+        .leaflet-popup-content-wrapper {
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .leaflet-popup-content { margin: 0; min-width: 260px; }
+        
+        .popup-content { padding: 16px; }
+        
+        .popup-content h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .popup-location {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        
+        .popup-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 12px;
+        }
+        
+        .popup-revenue {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .popup-revenue-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 13px;
+        }
+        
+        .popup-revenue-value { font-weight: 700; }
+        .popup-revenue-value.idr { color: var(--accent-red); }
+        .popup-revenue-value.sgd { color: var(--accent-blue); }
+        
+        .popup-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .popup-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .popup-btn.edit { background: var(--gradient-info); color: white; }
+        .popup-btn.toggle { background: var(--gradient-warning); color: white; }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10002;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 400px;
+        }
+        
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { border-left: 4px solid var(--accent-green); }
+        .toast.error { border-left: 4px solid var(--accent-red); }
+        .toast.warning { border-left: 4px solid var(--accent-orange); }
+        
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10003;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .loading-overlay.show { opacity: 1; visibility: visible; }
+        
+        .loading-spinner {
+            text-align: center;
+            color: white;
+        }
+        
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-tertiary); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        
+        /* Animations */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-count { animation: countUp 0.5s ease-out forwards; }
+        
+        /* Responsive */
+        @media (max-width: 1400px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .charts-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 1100px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .revenue-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        @media (max-width: 768px) {
+            .top-nav { flex-wrap: wrap; padding: 12px 16px; }
+            .nav-center { order: 3; flex: 100%; margin-top: 12px; max-width: none; }
+            .kpi-grid { grid-template-columns: 1fr; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .filter-group { flex-wrap: wrap; }
+            #map { height: 350px; }
+            .legend-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .sync-content { flex-direction: column; }
+            .sync-input { min-width: 100%; }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <div id="loadingText">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Edit Site</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="status-toggle">
+                    <button type="button" class="status-btn active" id="btnActive" onclick="setStatus(true)">✓ Active</button>
+                    <button type="button" class="status-btn" id="btnPipeline" onclick="setStatus(false)">◐ Pipeline</button>
+                </div>
+                <div class="form-group"><label>Site Name *</label><input type="text" id="editName" placeholder="e.g., RS Hasna Medika"></div>
+                <div class="form-group"><label>Address</label><input type="text" id="editAddress" placeholder="e.g., Cirebon, West Java"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Type</label><select id="editType"><option value="Core Laboratory">Core Laboratory</option><option value="Hospital Partnership">Hospital Partnership</option><option value="Clinic Partnership">Clinic Partnership</option><option value="Pipeline - Hospital">Pipeline - Hospital</option><option value="Pipeline - Clinic">Pipeline - Clinic</option></select></div>
+                    <div class="form-group"><label>Revenue (Mio IDR)</label><input type="number" id="editRevenue" placeholder="300"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Progress %</label><input type="number" id="editProgress" min="0" max="100" placeholder="0-100"></div>
+                    <div class="form-group"><label>Latitude</label><input type="number" step="0.0001" id="editLat" placeholder="-6.2297"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Longitude</label><input type="number" step="0.0001" id="editLng" placeholder="106.8355"></div>
+                    <div class="form-group"><label>&nbsp;</label><button type="button" class="modal-btn primary" onclick="pickLocation()" style="width:100%">📍 Pick from Map</button></div>
+                </div>
+                <div class="form-group"><label>Notes</label><textarea id="editNote" rows="2" placeholder="Status notes..."></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn danger" id="btnDelete" onclick="deleteSite()">Delete</button>
+                <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn success" onclick="saveSite()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal">
+            <div class="modal-header"><h2>Export Data</h2><button class="modal-close" onclick="closeExportModal()">&times;</button></div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: var(--text-muted);">Choose export format:</p>
+                <div style="display: grid; gap: 12px;">
+                    <button class="modal-btn success" onclick="exportExcel()" style="width:100%; padding: 16px;">📊 Export to Excel (.xlsx)</button>
+                    <button class="modal-btn primary" onclick="exportPDF()" style="width:100%; padding: 16px;">📄 Export Summary Report</button>
+                    <button class="modal-btn" style="width:100%; padding: 16px; background: var(--gradient-warning); color: white;" onclick="exportCSV()">📋 Export to CSV</button>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="modal-btn secondary" onclick="closeExportModal()">Close</button></div>
+        </div>
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal-overlay" id="setupModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header"><h2>Setup Google Sheets Sync</h2><button class="modal-close" onclick="closeSetupModal()">&times;</button></div>
+            <div class="modal-body">
+                <div style="background: var(--bg-tertiary); border-radius: 12px; padding: 20px;">
+                    <h4 style="margin-bottom: 16px; color: var(--accent-blue);">Quick Setup Guide:</h4>
+                    <ol style="margin-left: 20px; line-height: 2; color: var(--text-secondary);">
+                        <li>Create new Google Sheet</li>
+                        <li>Go to <strong>Extensions → Apps Script</strong></li>
+                        <li>Delete all code, paste the script below</li>
+                        <li>Click <strong>Deploy → New deployment → Web app</strong></li>
+                        <li>Set: Execute as <strong>Me</strong>, Access <strong>Anyone</strong></li>
+                        <li>Copy the Web App URL</li>
+                    </ol>
+                    <button class="sync-btn push" onclick="copyScript()" style="margin-top: 16px; width: 100%;">📋 Copy Apps Script Code</button>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="modal-btn secondary" onclick="closeSetupModal()">Close</button></div>
+        </div>
+    </div>
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="logo">
+            <div class="logo-icon">🔬</div>
+            <div>
+                <div class="logo-text">IQID Dashboard</div>
+                <div class="logo-subtitle">Innoquest Indonesia Lab Network</div>
+            </div>
+        </div>
+        
+        <div class="nav-center">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search locations..." onkeyup="handleSearch(event)">
+                <span class="search-shortcut">⌘K</span>
+            </div>
+        </div>
+        
+        <div class="nav-actions">
+            <button class="nav-btn" onclick="openAddModal()">+ Add Site</button>
+            <button class="nav-btn success" onclick="pushToSheet()">⬆️ Sync</button>
+            <button class="nav-btn" onclick="openExportModal()">📊 Export</button>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- KPI Dashboard -->
+        <div class="kpi-grid">
+            <div class="kpi-card blue">
+                <div class="kpi-header">
+                    <span class="kpi-label">Total Locations</span>
+                    <div class="kpi-icon blue">📍</div>
+                </div>
+                <div class="kpi-value" id="kpiTotal">0</div>
+                <div class="kpi-change up"><span>↑</span> Active network</div>
+            </div>
+            <div class="kpi-card green">
+                <div class="kpi-header">
+                    <span class="kpi-label">Active Sites</span>
+                    <div class="kpi-icon green">✓</div>
+                </div>
+                <div class="kpi-value" id="kpiActive">0</div>
+                <div class="kpi-change up"><span>↑</span> Operational</div>
+            </div>
+            <div class="kpi-card orange">
+                <div class="kpi-header">
+                    <span class="kpi-label">Pipeline</span>
+                    <div class="kpi-icon orange">◐</div>
+                </div>
+                <div class="kpi-value" id="kpiPipeline">0</div>
+                <div class="kpi-change"><span id="kpiAvgProgress">0%</span> avg progress</div>
+            </div>
+            <div class="kpi-card purple">
+                <div class="kpi-header">
+                    <span class="kpi-label">Monthly Revenue</span>
+                    <div class="kpi-icon purple">💰</div>
+                </div>
+                <div class="kpi-value" id="kpiRevenue">Rp 0</div>
+                <div class="kpi-change up"><span>↑</span> IDR/month</div>
+            </div>
+            <div class="kpi-card red">
+                <div class="kpi-header">
+                    <span class="kpi-label">Pipeline Value</span>
+                    <div class="kpi-icon red">📈</div>
+                </div>
+                <div class="kpi-value" id="kpiPipelineRev">Rp 0</div>
+                <div class="kpi-change"><span>Potential</span></div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <span class="filter-label">Status:</span>
+                <div class="filter-chips">
+                    <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">All</button>
+                    <button class="filter-chip" data-filter="active" onclick="setFilter('active')">Active</button>
+                    <button class="filter-chip" data-filter="pipeline" onclick="setFilter('pipeline')">Pipeline</button>
+                </div>
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Region:</span>
+                <select class="filter-select" id="regionFilter" onchange="applyFilters()">
+                    <option value="all">All Regions</option>
+                    <option value="jakarta">Jakarta</option>
+                    <option value="west-java">West Java</option>
+                    <option value="east-java">East Java</option>
+                    <option value="bali">Bali</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Type:</span>
+                <select class="filter-select" id="typeFilter" onchange="applyFilters()">
+                    <option value="all">All Types</option>
+                    <option value="core">Core Laboratory</option>
+                    <option value="hospital">Hospital</option>
+                    <option value="clinic">Clinic</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <span class="filter-label" id="filterCount">Showing 0 locations</span>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <div class="map-card">
+                <div id="map"></div>
+            </div>
+            
+            <div class="sidebar">
+                <!-- Revenue Summary -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><span class="icon">💰</span> Revenue Overview</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="revenue-grid">
+                            <div class="revenue-box idr"><div class="revenue-label">Active IDR</div><div class="revenue-value" id="revActiveIDR">0</div></div>
+                            <div class="revenue-box sgd"><div class="revenue-label">Active SGD</div><div class="revenue-value" id="revActiveSGD">0</div></div>
+                            <div class="revenue-box pip-idr"><div class="revenue-label">Pipeline IDR</div><div class="revenue-value" id="revPipelineIDR">0</div></div>
+                            <div class="revenue-box pip-sgd"><div class="revenue-label">Pipeline SGD</div><div class="revenue-value" id="revPipelineSGD">0</div></div>
+                        </div>
+                        <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Pipeline Progress -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><span class="icon">📊</span> Pipeline Progress</div>
+                        <span class="card-badge orange" id="pipelineBadge">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="pipeline-list" id="pipelineList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="icon">🗺️</span> Regional Distribution</div></div>
+                <div class="card-body"><div class="chart-container"><canvas id="regionChart"></canvas></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="icon">🏥</span> Site Types</div></div>
+                <div class="card-body"><div class="chart-container"><canvas id="typeChart"></canvas></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title"><span class="icon">📈</span> Pipeline Funnel</div></div>
+                <div class="card-body"><div class="chart-container"><canvas id="funnelChart"></canvas></div></div>
+            </div>
+        </div>
+
+        <!-- Legend Section -->
+        <div class="legend-section">
+            <div class="legend-header">
+                <span class="card-badge blue">ACTIVE</span>
+                <h3>Active Sites (<span id="activeLegendCount">0</span>)</h3>
+            </div>
+            <div class="legend-grid" id="activeLegend"></div>
+            
+            <div style="border-top: 2px dashed var(--border-color); margin: 24px 0;"></div>
+            
+            <div class="legend-header">
+                <span class="card-badge orange">PIPELINE</span>
+                <h3>Pipeline Sites (<span id="pipelineLegendCount">0</span>)</h3>
+            </div>
+            <div class="legend-grid" id="pipelineLegend"></div>
+        </div>
+
+        <!-- Sync Section -->
+        <div class="sync-section">
+            <div class="sync-header">
+                <h3>☁️ Google Sheets Sync</h3>
+                <div class="sync-status disconnected" id="syncStatus"><span class="sync-dot"></span><span id="syncStatusText">Not Connected</span></div>
+            </div>
+            <div class="sync-content">
+                <input type="text" class="sync-input" id="appsScriptUrl" placeholder="Paste Apps Script Web App URL...">
+                <button class="sync-btn test" onclick="testConnection()">🔗 Test</button>
+                <button class="sync-btn push" onclick="pushToSheet()">⬆️ Push</button>
+                <button class="sync-btn pull" onclick="pullFromSheet()">⬇️ Pull</button>
+                <button class="sync-btn guide" onclick="openSetupModal()">📖 Guide</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Constants
+        const EXCHANGE_RATE = 12000;
+        const STORAGE_KEY = 'iqid_data_v8';
+        const URL_KEY = 'iqid_script_url';
+        
+        // ⚠️ CONFIGURE THIS: Paste your Apps Script URL below (between the quotes)
+        // This will be used by everyone who opens this dashboard
+        const SHARED_SYNC_URL = '';
+        
+        // State
+        let allLocations = [];
+        let filteredLocations = [];
+        let currentFilter = 'all';
+        let markers = {};
+        let charts = {};
+        let isPickingLocation = false;
+        
+        // Default Data
+        const DEFAULT_DATA = [
+            { id: 'core-lab', name: "Core Lab - Kuningan", address: "Jalan Rasuna Said, Jakarta", type: "Core Laboratory", isActive: true, revenue: 900, progress: 100, note: "Operational", lat: -6.2297, lng: 106.8355, region: 'jakarta' },
+            { id: 'bali-intl', name: "Bali International Hospital", address: "Sanur, Bali", type: "Hospital Partnership", isActive: true, revenue: 900, progress: 100, note: "Operational", lat: -8.6917, lng: 115.2611, region: 'bali' },
+            { id: 'borc', name: "BORC Hospital", address: "Surabaya, East Java", type: "Hospital Partnership", isActive: true, revenue: 120, progress: 100, note: "Operational", lat: -7.2575, lng: 112.7521, region: 'east-java' },
+            { id: 'hilda', name: "Hilda Alnaira", address: "Koja, Jakarta Utara", type: "Clinic Partnership", isActive: true, revenue: 250, progress: 100, note: "Operational", lat: -6.1100, lng: 106.8900, region: 'jakarta' },
+            { id: 'gws', name: "GWS Medika", address: "Blok M, Jakarta Selatan", type: "Clinic Partnership", isActive: true, revenue: 80, progress: 100, note: "Operational", lat: -6.2436, lng: 106.7981, region: 'jakarta' },
+            { id: 'royal-progress', name: "Royal Progress Hospital", address: "Sunter, Jakarta Utara", type: "Hospital Partnership", isActive: true, revenue: 550, progress: 100, note: "Operational", lat: -6.1391, lng: 106.8684, region: 'jakarta' },
+            { id: 'heartology', name: "Heartology Hospital", address: "South Jakarta", type: "Hospital Partnership", isActive: true, revenue: 300, progress: 100, note: "Operational", lat: -6.2350, lng: 106.8200, region: 'jakarta' },
+            { id: 'hasna-cirebon', name: "Hasna Medika Hospital Cirebon", address: "Cirebon, West Java", type: "Pipeline - Hospital", isActive: false, revenue: 290, progress: 30, note: "In negotiation", lat: -6.7063, lng: 108.5570, region: 'west-java' },
+            { id: 'hasna-kuningan', name: "Hasna Medika Hospital Kuningan", address: "Kuningan, West Java", type: "Pipeline - Hospital", isActive: false, revenue: 290, progress: 25, note: "Initial discussion", lat: -6.9756, lng: 108.4836, region: 'west-java' },
+            { id: 'hasna-cianjur', name: "Hasna Medika Clinic Cianjur", address: "Cianjur, West Java", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 20, note: "Prospecting", lat: -6.8204, lng: 107.1408, region: 'west-java' },
+            { id: 'hasna-bandung', name: "Hasna Medika Clinic Bandung", address: "Bandung, West Java", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 15, note: "Early stage", lat: -6.9175, lng: 107.6191, region: 'west-java' },
+            { id: 'hasna-indramayu', name: "Hasna Medika Clinic Indramayu", address: "Indramayu, West Java", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -6.3276, lng: 108.3222, region: 'west-java' },
+            { id: 'hasna-kedawung', name: "Hasna Medika Clinic Kedawung", address: "Kedawung, West Java", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -6.7167, lng: 108.4667, region: 'west-java' },
+            { id: 'hasna-garut', name: "Hasna Medika Clinic Garut", address: "Garut, West Java", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -7.2274, lng: 107.9085, region: 'west-java' },
+            { id: 'hasna-malang', name: "Hasna Medika Clinic Malang", address: "Malang, East Java", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -7.9797, lng: 112.6304, region: 'east-java' },
+            { id: 'hasna-pacce', name: "Hasna Medika Clinic Pacce", address: "Pacce, Malang", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -8.0500, lng: 112.6000, region: 'east-java' },
+            { id: 'hasna-serang', name: "Hasna Medika Clinic Serang", address: "Serang, Banten", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -6.1149, lng: 106.1502, region: 'other' },
+            { id: 'hasna-subang', name: "Hasna Medika Clinic Subang", address: "Subang, West Java", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -6.5714, lng: 107.7547, region: 'west-java' },
+            { id: 'hasna-karangasem', name: "Hasna Medika Clinic Karangasem", address: "Karangasem, Bali", type: "Pipeline - Clinic", isActive: false, revenue: 35, progress: 10, note: "Early stage", lat: -8.4500, lng: 115.6000, region: 'bali' },
+            { id: 'rmc-makassar', name: "RMC Clinic", address: "Makassar, South Sulawesi", type: "Pipeline - Clinic", isActive: false, revenue: 100, progress: 40, note: "Proposal sent", lat: -5.1477, lng: 119.4327, region: 'other' },
+            { id: 'aspen-depok', name: "Aspen Hospital", address: "Depok, West Java", type: "Pipeline - Hospital", isActive: false, revenue: 300, progress: 50, note: "Contract review", lat: -6.4025, lng: 106.7942, region: 'west-java' },
+            { id: 'karya-bantar', name: "Karya Medika - Bantar Gebang", address: "Bantar Gebang, Bekasi", type: "Pipeline - Hospital", isActive: false, revenue: 30, progress: 20, note: "Prospecting", lat: -6.3219, lng: 107.0140, region: 'west-java' },
+            { id: 'karya-tambun', name: "Karya Medika - Tambun", address: "Tambun, Bekasi", type: "Pipeline - Hospital", isActive: false, revenue: null, progress: 10, note: "Early discussion", lat: -6.2569, lng: 107.0454, region: 'west-java' },
+            { id: 'jwcc-asih', name: "JWCC Asih Hospital", address: "Panglima Polim, South Jakarta", type: "Pipeline - Hospital", isActive: false, revenue: null, progress: 5, note: "Initial contact", lat: -6.2550, lng: 106.7920, region: 'jakarta' },
+            { id: 'karya-cibitung', name: "Karya Medika - Cibitung", address: "Cibitung, Bekasi", type: "Pipeline - Hospital", isActive: false, revenue: null, progress: 5, note: "Initial contact", lat: -6.2690, lng: 107.0870, region: 'west-java' },
+        ];
+
+        // Utility Functions
+        function showLoading(text) { document.getElementById('loadingText').textContent = text || 'Loading...'; document.getElementById('loadingOverlay').classList.add('show'); }
+        function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+        function showToast(msg, type = 'success') { const t = document.getElementById('toast'); t.innerHTML = msg; t.className = 'toast show ' + type; setTimeout(() => t.classList.remove('show'), 3500); }
+        
+        function formatIDR(m) { return m ? `${m.toLocaleString()}M` : '-'; }
+        function formatSGD(m) { return m ? `${Math.round((m * 1000000) / EXCHANGE_RATE).toLocaleString()}` : '-'; }
+        function getProgressClass(p) { if (p >= 100) return 'complete'; if (p >= 70) return 'high'; if (p >= 30) return 'medium'; return 'low'; }
+        
+        function animateValue(el, end, prefix = '', suffix = '') {
+            const duration = 1000;
+            const start = 0;
+            const startTime = performance.now();
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const value = Math.floor(progress * end);
+                el.textContent = prefix + value.toLocaleString() + suffix;
+                if (progress < 1) requestAnimationFrame(update);
+            }
+            requestAnimationFrame(update);
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+            if (body.dataset.theme === 'dark') {
+                body.dataset.theme = 'light';
+                btn.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.dataset.theme = 'dark';
+                btn.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+            updateCharts();
+        }
+
+        // Search
+        function handleSearch(e) {
+            const query = e.target.value.toLowerCase();
+            if (query.length === 0) {
+                filteredLocations = [...allLocations];
+            } else {
+                filteredLocations = allLocations.filter(loc => 
+                    loc.name.toLowerCase().includes(query) || 
+                    loc.address.toLowerCase().includes(query) ||
+                    loc.type.toLowerCase().includes(query)
+                );
+            }
+            applyFilters();
+        }
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+        });
+
+        // Filters
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const region = document.getElementById('regionFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            
+            filteredLocations = allLocations.filter(loc => {
+                if (currentFilter === 'active' && !loc.isActive) return false;
+                if (currentFilter === 'pipeline' && loc.isActive) return false;
+                if (region !== 'all' && loc.region !== region) return false;
+                if (type !== 'all') {
+                    if (type === 'core' && loc.type !== 'Core Laboratory') return false;
+                    if (type === 'hospital' && !loc.type.includes('Hospital')) return false;
+                    if (type === 'clinic' && !loc.type.includes('Clinic')) return false;
+                }
+                if (search && !loc.name.toLowerCase().includes(search) && !loc.address.toLowerCase().includes(search)) return false;
+                return true;
+            });
+            
+            document.getElementById('filterCount').textContent = `Showing ${filteredLocations.length} locations`;
+            updateMapMarkers();
+            updateLegends();
+        }
+
+        // Data Management
+        function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(allLocations)); }
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) { try { allLocations = JSON.parse(saved); return true; } catch(e) {} }
+            return false;
+        }
+        function resetData() {
+            allLocations = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            saveData();
+            refresh();
+            showToast('Data reset to default');
+        }
+
+        // Map
+        const map = L.map('map').setView([-5.5, 115], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 19 }).addTo(map);
+        
+        map.on('click', (e) => {
+            if (isPickingLocation) {
+                document.getElementById('editLat').value = e.latlng.lat.toFixed(4);
+                document.getElementById('editLng').value = e.latlng.lng.toFixed(4);
+                isPickingLocation = false;
+                document.getElementById('editModal').classList.add('show');
+                showToast('📍 Location selected');
+            }
+        });
+
+        function createMarkerIcon(loc) {
+            const color = !loc.isActive ? '#dd6b20' : (loc.type === 'Core Laboratory' ? '#e53e3e' : loc.type.includes('Hospital') ? '#3182ce' : '#38a169');
+            const size = loc.type === 'Core Laboratory' ? 36 : 28;
+            const active = allLocations.filter(l => l.isActive);
+            const pipeline = allLocations.filter(l => !l.isActive).sort((a,b) => b.progress - a.progress);
+            const label = loc.isActive ? (loc.type === 'Core Laboratory' ? '★' : (active.indexOf(loc) + 1)) : `P${pipeline.indexOf(loc) + 1}`;
+            return L.divIcon({
+                className: 'marker',
+                html: `<div style="background:${color};width:${size}px;height:${size}px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:${loc.type==='Core Laboratory'?12:10}px;box-shadow:0 4px 12px rgba(0,0,0,0.3);border:2px solid white;">${label}</div>`,
+                iconSize: [size, size],
+                iconAnchor: [size/2, size/2],
+                popupAnchor: [0, -size/2]
+            });
+        }
+
+        function createPopup(loc) {
+            const rev = loc.revenue ? `<div class="popup-revenue"><div class="popup-revenue-row"><span>IDR</span><span class="popup-revenue-value idr">Rp ${formatIDR(loc.revenue)}</span></div><div class="popup-revenue-row"><span>SGD</span><span class="popup-revenue-value sgd">S$ ${formatSGD(loc.revenue)}</span></div></div>` : '';
+            return `<div class="popup-content"><h3>${loc.name}</h3><div class="popup-location">${loc.address}</div><span class="popup-badge" style="background:${loc.isActive?'var(--gradient-info)':'var(--gradient-warning)'}">${loc.isActive?'Active':'Pipeline'}</span>${rev}<div class="popup-actions"><button class="popup-btn edit" onclick="openEditModal('${loc.id}')">Edit</button><button class="popup-btn toggle" onclick="toggleStatus('${loc.id}')">${loc.isActive?'→ Pipeline':'→ Active'}</button></div></div>`;
+        }
+
+        function updateMapMarkers() {
+            Object.values(markers).forEach(m => map.removeLayer(m));
+            markers = {};
+            filteredLocations.forEach(loc => {
+                const marker = L.marker([loc.lat, loc.lng], { icon: createMarkerIcon(loc) }).addTo(map);
+                marker.bindPopup(createPopup(loc), { maxWidth: 280 });
+                markers[loc.id] = marker;
+            });
+        }
+
+        function flyTo(id) {
+            const loc = allLocations.find(l => l.id === id);
+            if (loc && markers[id]) {
+                map.flyTo([loc.lat, loc.lng], 12, { duration: 1.2 });
+                setTimeout(() => markers[id].openPopup(), 1300);
+            }
+        }
+
+        // KPI Updates
+        function updateKPIs() {
+            const active = allLocations.filter(l => l.isActive);
+            const pipeline = allLocations.filter(l => !l.isActive);
+            const activeRev = active.reduce((s, l) => s + (l.revenue || 0), 0);
+            const pipelineRev = pipeline.reduce((s, l) => s + (l.revenue || 0), 0);
+            const avgProgress = pipeline.length ? Math.round(pipeline.reduce((s, l) => s + l.progress, 0) / pipeline.length) : 0;
+
+            document.getElementById('kpiTotal').textContent = allLocations.length;
+            document.getElementById('kpiActive').textContent = active.length;
+            document.getElementById('kpiPipeline').textContent = pipeline.length;
+            document.getElementById('kpiRevenue').textContent = `Rp ${activeRev.toLocaleString()}M`;
+            document.getElementById('kpiPipelineRev').textContent = `Rp ${pipelineRev.toLocaleString()}M`;
+            document.getElementById('kpiAvgProgress').textContent = `${avgProgress}%`;
+
+            document.getElementById('revActiveIDR').textContent = `Rp ${activeRev}M`;
+            document.getElementById('revActiveSGD').textContent = `S$ ${formatSGD(activeRev)}`;
+            document.getElementById('revPipelineIDR').textContent = `Rp ${pipelineRev}M`;
+            document.getElementById('revPipelineSGD').textContent = `S$ ${formatSGD(pipelineRev)}`;
+            document.getElementById('pipelineBadge').textContent = pipeline.length;
+        }
+
+        // Pipeline List
+        function updatePipelineList() {
+            const pipeline = allLocations.filter(l => !l.isActive).sort((a, b) => b.progress - a.progress);
+            const el = document.getElementById('pipelineList');
+            el.innerHTML = pipeline.map((loc, i) => `
+                <div class="pipeline-item" onclick="flyTo('${loc.id}')">
+                    <div class="pipeline-rank">${i + 1}</div>
+                    <div class="pipeline-info">
+                        <div class="pipeline-name">${loc.name}</div>
+                        <div class="pipeline-meta">${loc.note || loc.type}</div>
+                    </div>
+                    <div class="pipeline-progress-wrap">
+                        <div class="pipeline-progress-bar"><div class="pipeline-progress-fill ${getProgressClass(loc.progress)}" style="width:${loc.progress}%"></div></div>
+                        <div class="pipeline-progress-text">${loc.progress}%</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Legends
+        function updateLegends() {
+            const active = filteredLocations.filter(l => l.isActive);
+            const pipeline = filteredLocations.filter(l => !l.isActive).sort((a, b) => b.progress - a.progress);
+            
+            document.getElementById('activeLegendCount').textContent = active.length;
+            document.getElementById('pipelineLegendCount').textContent = pipeline.length;
+
+            document.getElementById('activeLegend').innerHTML = active.map((loc, i) => createLegendItem(loc, i, true)).join('');
+            document.getElementById('pipelineLegend').innerHTML = pipeline.map((loc, i) => createLegendItem(loc, i, false)).join('');
+        }
+
+        function createLegendItem(loc, index, isActive) {
+            const markerClass = loc.type === 'Core Laboratory' ? 'core' : loc.type.includes('Hospital') ? 'hospital' : loc.type.includes('Clinic') ? 'clinic' : 'pipeline';
+            const label = isActive ? (loc.type === 'Core Laboratory' ? '★' : index + 1) : `P${index + 1}`;
+            const revText = loc.revenue ? `Rp ${formatIDR(loc.revenue)} | S$ ${formatSGD(loc.revenue)}` : 'Pending';
+            const progress = !isActive ? `<div class="legend-progress"><div class="progress-header"><span class="progress-label">Progress</span><span class="progress-value">${loc.progress}%</span></div><div class="progress-bar-container"><div class="progress-bar ${getProgressClass(loc.progress)}" style="width:${loc.progress}%"></div></div></div>${loc.note ? `<div class="legend-note">${loc.note}</div>` : ''}` : '';
+            
+            return `<div class="legend-item ${isActive ? 'active-site' : 'pipeline-site'}" onclick="flyTo('${loc.id}')">
+                <div class="legend-edit" onclick="event.stopPropagation();openEditModal('${loc.id}')">✎</div>
+                <div class="legend-top">
+                    <div class="legend-marker ${isActive ? markerClass : 'pipeline'}">${label}</div>
+                    <div class="legend-text">
+                        <div class="legend-title">${loc.name}</div>
+                        <div class="legend-subtitle">${loc.address}</div>
+                        <div class="legend-revenue">${revText}/mo</div>
+                    </div>
+                </div>
+                ${progress}
+            </div>`;
+        }
+
+        // Charts
+        function initCharts() {
+            const textColor = getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#4a5568';
+            
+            // Revenue Donut
+            charts.revenue = new Chart(document.getElementById('revenueChart'), {
+                type: 'doughnut',
+                data: { labels: ['Active', 'Pipeline'], datasets: [{ data: [0, 0], backgroundColor: ['#3182ce', '#dd6b20'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } }, cutout: '65%' }
+            });
+
+            // Region Bar
+            charts.region = new Chart(document.getElementById('regionChart'), {
+                type: 'bar',
+                data: { labels: ['Jakarta', 'West Java', 'East Java', 'Bali', 'Other'], datasets: [{ label: 'Sites', data: [0,0,0,0,0], backgroundColor: '#805ad5' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: textColor } }, x: { ticks: { color: textColor } } } }
+            });
+
+            // Type Pie
+            charts.type = new Chart(document.getElementById('typeChart'), {
+                type: 'pie',
+                data: { labels: ['Core Lab', 'Hospital', 'Clinic'], datasets: [{ data: [0,0,0], backgroundColor: ['#e53e3e', '#3182ce', '#38a169'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+            });
+
+            // Funnel (Horizontal Bar)
+            charts.funnel = new Chart(document.getElementById('funnelChart'), {
+                type: 'bar',
+                data: { labels: ['Early (0-29%)', 'In Progress (30-69%)', 'Near Close (70-99%)', 'Closed (100%)'], datasets: [{ data: [0,0,0,0], backgroundColor: ['#e53e3e', '#dd6b20', '#38a169', '#3182ce'] }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { color: textColor } }, y: { ticks: { color: textColor } } } }
+            });
+        }
+
+        function updateCharts() {
+            const active = allLocations.filter(l => l.isActive);
+            const pipeline = allLocations.filter(l => !l.isActive);
+            const activeRev = active.reduce((s, l) => s + (l.revenue || 0), 0);
+            const pipelineRev = pipeline.reduce((s, l) => s + (l.revenue || 0), 0);
+
+            // Revenue
+            charts.revenue.data.datasets[0].data = [activeRev, pipelineRev];
+            charts.revenue.update();
+
+            // Region
+            const regions = { jakarta: 0, 'west-java': 0, 'east-java': 0, bali: 0, other: 0 };
+            allLocations.forEach(l => { regions[l.region || 'other']++; });
+            charts.region.data.datasets[0].data = [regions.jakarta, regions['west-java'], regions['east-java'], regions.bali, regions.other];
+            charts.region.update();
+
+            // Type
+            const core = allLocations.filter(l => l.type === 'Core Laboratory').length;
+            const hospital = allLocations.filter(l => l.type.includes('Hospital')).length;
+            const clinic = allLocations.filter(l => l.type.includes('Clinic')).length;
+            charts.type.data.datasets[0].data = [core, hospital, clinic];
+            charts.type.update();
+
+            // Funnel
+            const early = pipeline.filter(l => l.progress < 30).length;
+            const inProgress = pipeline.filter(l => l.progress >= 30 && l.progress < 70).length;
+            const nearClose = pipeline.filter(l => l.progress >= 70 && l.progress < 100).length;
+            const closed = pipeline.filter(l => l.progress >= 100).length;
+            charts.funnel.data.datasets[0].data = [early, inProgress, nearClose, closed];
+            charts.funnel.update();
+        }
+
+        // Modal Functions
+        function openEditModal(id) {
+            const loc = allLocations.find(l => l.id === id);
+            if (!loc) return;
+            document.getElementById('modalTitle').textContent = 'Edit Site';
+            document.getElementById('editId').value = id;
+            document.getElementById('editName').value = loc.name;
+            document.getElementById('editAddress').value = loc.address || '';
+            document.getElementById('editType').value = loc.type;
+            document.getElementById('editRevenue').value = loc.revenue || '';
+            document.getElementById('editProgress').value = loc.progress || 0;
+            document.getElementById('editLat').value = loc.lat;
+            document.getElementById('editLng').value = loc.lng;
+            document.getElementById('editNote').value = loc.note || '';
+            setStatus(loc.isActive);
+            document.getElementById('btnDelete').style.display = 'inline-block';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Site';
+            document.getElementById('editId').value = '';
+            document.getElementById('editName').value = '';
+            document.getElementById('editAddress').value = '';
+            document.getElementById('editType').value = 'Pipeline - Hospital';
+            document.getElementById('editRevenue').value = '';
+            document.getElementById('editProgress').value = '10';
+            document.getElementById('editLat').value = '-6.2';
+            document.getElementById('editLng').value = '106.8';
+            document.getElementById('editNote').value = '';
+            setStatus(false);
+            document.getElementById('btnDelete').style.display = 'none';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeModal() { document.getElementById('editModal').classList.remove('show'); isPickingLocation = false; }
+        function openExportModal() { document.getElementById('exportModal').classList.add('show'); }
+        function closeExportModal() { document.getElementById('exportModal').classList.remove('show'); }
+        function openSetupModal() { document.getElementById('setupModal').classList.add('show'); }
+        function closeSetupModal() { document.getElementById('setupModal').classList.remove('show'); }
+
+        function setStatus(isActive) {
+            document.getElementById('btnActive').className = 'status-btn' + (isActive ? ' active' : '');
+            document.getElementById('btnPipeline').className = 'status-btn' + (!isActive ? ' pipeline-active' : '');
+        }
+
+        function getStatus() { return document.getElementById('btnActive').classList.contains('active'); }
+
+        function saveSite() {
+            const id = document.getElementById('editId').value;
+            const name = document.getElementById('editName').value.trim();
+            if (!name) { showToast('Name is required!', 'error'); return; }
+
+            const data = {
+                id: id || 'site-' + Date.now(),
+                name,
+                address: document.getElementById('editAddress').value.trim(),
+                type: document.getElementById('editType').value,
+                isActive: getStatus(),
+                revenue: parseInt(document.getElementById('editRevenue').value) || null,
+                progress: parseInt(document.getElementById('editProgress').value) || 0,
+                lat: parseFloat(document.getElementById('editLat').value) || -6.2,
+                lng: parseFloat(document.getElementById('editLng').value) || 106.8,
+                note: document.getElementById('editNote').value.trim(),
+                region: detectRegion(document.getElementById('editAddress').value)
+            };
+
+            if (id) {
+                const idx = allLocations.findIndex(l => l.id === id);
+                if (idx >= 0) allLocations[idx] = data;
+            } else {
+                allLocations.push(data);
+            }
+
+            saveData();
+            refresh();
+            closeModal();
+            showToast(id ? '✓ Site updated' : '✓ Site added');
+        }
+
+        function deleteSite() {
+            const id = document.getElementById('editId').value;
+            if (!id || !confirm('Delete this site?')) return;
+            allLocations = allLocations.filter(l => l.id !== id);
+            saveData();
+            refresh();
+            closeModal();
+            showToast('Site deleted', 'warning');
+        }
+
+        function toggleStatus(id) {
+            const loc = allLocations.find(l => l.id === id);
+            if (!loc) return;
+            loc.isActive = !loc.isActive;
+            if (loc.isActive) loc.progress = 100;
+            saveData();
+            refresh();
+            showToast(`${loc.name} → ${loc.isActive ? 'Active' : 'Pipeline'}`);
+        }
+
+        function pickLocation() {
+            isPickingLocation = true;
+            closeModal();
+            showToast('Click on map to select location', 'warning');
+        }
+
+        function detectRegion(address) {
+            const a = address.toLowerCase();
+            if (a.includes('jakarta')) return 'jakarta';
+            if (a.includes('bandung') || a.includes('cirebon') || a.includes('west java') || a.includes('bekasi') || a.includes('depok') || a.includes('bogor')) return 'west-java';
+            if (a.includes('surabaya') || a.includes('malang') || a.includes('east java')) return 'east-java';
+            if (a.includes('bali')) return 'bali';
+            return 'other';
+        }
+
+        // Export Functions
+        function exportExcel() {
+            showLoading('Generating Excel...');
+            setTimeout(() => {
+                const wb = XLSX.utils.book_new();
+                const data = allLocations.map((l, i) => ({ No: i+1, ID: l.id, Name: l.name, Address: l.address, Type: l.type, Status: l.isActive ? 'Active' : 'Pipeline', 'Revenue (Mio IDR)': l.revenue || '', Progress: l.progress, Notes: l.note, Lat: l.lat, Lng: l.lng }));
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'Locations');
+                XLSX.writeFile(wb, `IQID_Data_${new Date().toISOString().split('T')[0]}.xlsx`);
+                hideLoading();
+                closeExportModal();
+                showToast('Excel exported!');
+            }, 500);
+        }
+
+        function exportCSV() {
+            const headers = ['ID','Name','Address','Type','Status','Revenue','Progress','Notes','Lat','Lng'];
+            let csv = headers.join(',') + '\n';
+            allLocations.forEach(l => { csv += [l.id, `"${l.name}"`, `"${l.address}"`, l.type, l.isActive?'Active':'Pipeline', l.revenue||'', l.progress, `"${l.note||''}"`, l.lat, l.lng].join(',') + '\n'; });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IQID_Data.csv`; a.click();
+            closeExportModal();
+            showToast('CSV exported!');
+        }
+
+        function exportPDF() {
+            const active = allLocations.filter(l => l.isActive);
+            const pipeline = allLocations.filter(l => !l.isActive);
+            const activeRev = active.reduce((s, l) => s + (l.revenue || 0), 0);
+            const pipelineRev = pipeline.reduce((s, l) => s + (l.revenue || 0), 0);
+            
+            const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>IQID Report</title><style>body{font-family:Inter,sans-serif;padding:40px;max-width:900px;margin:auto}h1{color:#1a202c;border-bottom:3px solid #3182ce;padding-bottom:10px}h2{color:#2d3748;margin-top:30px}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{padding:12px;text-align:left;border-bottom:1px solid #e2e8f0}th{background:#f7fafc}.footer{margin-top:40px;text-align:center;color:#718096;font-size:12px}</style></head><body><h1>IQID Lab Network Report</h1><p>Generated: ${new Date().toLocaleString()}</p><h2>Summary</h2><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Total Locations</td><td>${allLocations.length}</td></tr><tr><td>Active Sites</td><td>${active.length}</td></tr><tr><td>Pipeline Sites</td><td>${pipeline.length}</td></tr><tr><td>Active Revenue</td><td>Rp ${activeRev.toLocaleString()}M</td></tr><tr><td>Pipeline Potential</td><td>Rp ${pipelineRev.toLocaleString()}M</td></tr></table><h2>Active Sites</h2><table><tr><th>Name</th><th>Type</th><th>Revenue</th></tr>${active.map(l=>`<tr><td>${l.name}</td><td>${l.type}</td><td>Rp ${l.revenue||'-'}M</td></tr>`).join('')}</table><h2>Pipeline Sites</h2><table><tr><th>Name</th><th>Progress</th><th>Status</th></tr>${pipeline.sort((a,b)=>b.progress-a.progress).map(l=>`<tr><td>${l.name}</td><td>${l.progress}%</td><td>${l.note||'-'}</td></tr>`).join('')}</table><div class="footer">IQID Dashboard Report</div></body></html>`;
+            
+            const win = window.open('', '_blank');
+            win.document.write(html);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+            closeExportModal();
+        }
+
+        // Sync Functions
+        const APPS_SCRIPT = `function doGet(e){return handleRequest(e,'GET')}function doPost(e){return handleRequest(e,'POST')}function handleRequest(e,method){const sheet=SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();try{if(method==='GET'){const data=sheet.getDataRange().getValues();if(data.length<2)return jsonResponse({success:true,data:[]});const locations=[];for(let i=1;i<data.length;i++){const row=data[i];if(!row[1])continue;locations.push({id:row[0]||'loc-'+i,name:row[1],address:row[2],type:row[3],isActive:row[4]==='Active',revenue:row[5]||null,progress:row[6]||0,note:row[7],lat:row[8],lng:row[9],region:row[10]||'other'})}return jsonResponse({success:true,data:locations})}else{const payload=JSON.parse(e.postData.contents);const locations=payload.data;sheet.clear();sheet.getRange(1,1,1,11).setValues([['ID','Name','Address','Type','Status','Revenue','Progress','Notes','Lat','Lng','Region']]);if(locations.length>0){const rows=locations.map(l=>[l.id,l.name,l.address,l.type,l.isActive?'Active':'Pipeline',l.revenue,l.progress,l.note,l.lat,l.lng,l.region||'other']);sheet.getRange(2,1,rows.length,11).setValues(rows)}return jsonResponse({success:true,count:locations.length})}}catch(error){return jsonResponse({success:false,error:error.toString()})}}function jsonResponse(data){return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON)}`;
+
+        function copyScript() {
+            navigator.clipboard.writeText(APPS_SCRIPT).then(() => showToast('Script copied!'));
+        }
+
+        function updateSyncStatus(status, text) {
+            const el = document.getElementById('syncStatus');
+            const textEl = document.getElementById('syncStatusText');
+            el.className = 'sync-status ' + status;
+            textEl.textContent = text;
+        }
+
+        async function testConnection() {
+            const url = document.getElementById('appsScriptUrl').value.trim();
+            if (!url) { showToast('Enter URL first', 'error'); return; }
+            showLoading('Testing...');
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success !== undefined) {
+                    localStorage.setItem(URL_KEY, url);
+                    updateSyncStatus('connected', 'Connected');
+                    showToast('✓ Connected!');
+                }
+            } catch (e) { showToast('Connection failed', 'error'); updateSyncStatus('disconnected', 'Failed'); }
+            hideLoading();
+        }
+
+        async function pushToSheet() {
+            let url = SHARED_SYNC_URL || document.getElementById('appsScriptUrl').value.trim() || localStorage.getItem(URL_KEY);
+            if (!url) { showToast('Setup sync first', 'error'); return; }
+            showLoading('Syncing...');
+            try {
+                await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: allLocations }), mode: 'no-cors' });
+                updateSyncStatus('connected', `Synced ${new Date().toLocaleTimeString()}`);
+                showToast(`✓ Pushed ${allLocations.length} locations`);
+            } catch (e) { showToast('Push failed', 'error'); }
+            hideLoading();
+        }
+
+        async function pullFromSheet() {
+            let url = SHARED_SYNC_URL || document.getElementById('appsScriptUrl').value.trim() || localStorage.getItem(URL_KEY);
+            if (!url) { showToast('Setup sync first', 'error'); return; }
+            showLoading('Pulling...');
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success && data.data && data.data.length) {
+                    allLocations = data.data;
+                    saveData();
+                    refresh();
+                    updateSyncStatus('connected', `Pulled ${new Date().toLocaleTimeString()}`);
+                    showToast(`✓ Pulled ${allLocations.length} locations`);
+                } else { showToast('No data in sheet', 'warning'); }
+            } catch (e) { showToast('Pull failed', 'error'); }
+            hideLoading();
+        }
+
+        // Refresh Everything
+        function refresh() {
+            filteredLocations = [...allLocations];
+            updateKPIs();
+            updatePipelineList();
+            updateCharts();
+            applyFilters();
+        }
+
+        // Initialize
+        function init() {
+            // Load theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') { document.body.dataset.theme = 'dark'; document.getElementById('themeBtn').textContent = '☀️'; }
+            
+            // Load sync URL - prioritize shared URL if configured
+            const savedUrl = localStorage.getItem(URL_KEY);
+            if (SHARED_SYNC_URL) {
+                document.getElementById('appsScriptUrl').value = SHARED_SYNC_URL;
+                localStorage.setItem(URL_KEY, SHARED_SYNC_URL);
+                updateSyncStatus('connected', 'Auto-configured');
+            } else if (savedUrl) {
+                document.getElementById('appsScriptUrl').value = savedUrl;
+            }
+            
+            // Load data
+            if (!loadData()) { allLocations = JSON.parse(JSON.stringify(DEFAULT_DATA)); saveData(); }
+            
+            // Auto-pull if shared URL is configured
+            if (SHARED_SYNC_URL && !localStorage.getItem('iqid_pulled')) {
+                setTimeout(() => {
+                    pullFromSheet();
+                    localStorage.setItem('iqid_pulled', 'true');
+                }, 1000);
+            }
+            
+            // Init charts
+            initCharts();
+            
+            // Refresh all
+            refresh();
+        }
+
+        init();
+    </script>
+</body>
+</html>
